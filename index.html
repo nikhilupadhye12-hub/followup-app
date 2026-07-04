@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Follow Up</title>
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#1E1C18">
+<link rel="apple-touch-icon" href="/icons/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#1E1C18; --surface:#28251F; --surface-2:#332F27; --line:#413B31;
+    --text-hi:#F2EAD8; --text-lo:#A79E8C;
+    --olive:#8A9C68; --olive-dim:#5C6B45; --brick:#C96A4C; --brick-dim:#8A4531; --amber:#D3A24C;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html,body{background:var(--bg); color:var(--text-hi); font-family:'Inter',sans-serif; -webkit-tap-highlight-color:transparent; height:100%;}
+  body{display:flex; justify-content:center; min-height:100vh;}
+  #app{width:100%; max-width:440px; min-height:100vh; background:var(--bg); display:flex; flex-direction:column; position:relative;}
+
+  header{padding:20px 20px 14px; border-bottom:1px solid var(--line);}
+  .stamp{display:inline-flex; align-items:center; gap:8px; font-family:'Space Mono',monospace; font-weight:700; font-size:20px; letter-spacing:1px; border:2px solid var(--text-hi); padding:5px 12px; border-radius:3px; transform:rotate(-1deg);}
+  .stamp .dot{width:8px;height:8px;border-radius:50%;background:var(--olive);}
+  .sub{font-family:'Space Mono',monospace; font-size:11px; color:var(--text-lo); letter-spacing:1.5px; text-transform:uppercase; margin-top:8px;}
+  .notif-bar{margin-top:12px; display:flex; align-items:center; gap:8px; font-size:12px;}
+  .notif-status{padding:4px 9px; border-radius:12px; font-family:'Space Mono',monospace; font-size:10px; letter-spacing:0.5px;}
+  .notif-status.off{background:var(--surface-2); color:var(--text-lo);}
+  .notif-status.on{background:var(--olive-dim); color:#EFEAD8;}
+
+  main{flex:1; padding:18px 16px 90px; overflow-y:auto;}
+  .view{display:none;} .view.active{display:block;}
+  .card{background:var(--surface); border:1px solid var(--line); border-radius:10px; padding:16px; margin-bottom:14px;}
+  .card-title{font-family:'Space Mono',monospace; font-size:12px; text-transform:uppercase; letter-spacing:1.5px; color:var(--text-lo); margin-bottom:12px; display:flex; justify-content:space-between; align-items:center;}
+
+  .weight-row{display:flex; align-items:baseline; gap:10px; margin-bottom:10px;}
+  .weight-num{font-family:'Space Mono',monospace; font-size:38px; font-weight:700; color:var(--olive);}
+  .weight-unit{font-size:14px; color:var(--text-lo);}
+  .weight-target{margin-left:auto; text-align:right; font-size:12px; color:var(--text-lo); line-height:1.5;}
+  .bar-track{height:10px; background:var(--surface-2); border-radius:6px; overflow:hidden; margin:10px 0 8px;}
+  .bar-fill{height:100%; background:linear-gradient(90deg, var(--olive-dim), var(--olive)); border-radius:6px; transition:width .4s;}
+  .bar-labels{display:flex; justify-content:space-between; font-size:11px; color:var(--text-lo); font-family:'Space Mono',monospace;}
+  .log-row{display:flex; gap:8px; margin-top:12px;}
+  .log-row input{flex:1;}
+
+  input, textarea, select{background:var(--surface-2); border:1px solid var(--line); color:var(--text-hi); border-radius:6px; padding:9px 11px; font-family:'Inter',sans-serif; font-size:14px; width:100%;}
+  input:focus, textarea:focus, select:focus{outline:none; border-color:var(--olive);}
+  textarea{resize:vertical; min-height:44px;}
+  button{font-family:'Inter',sans-serif; font-weight:600; font-size:14px; border:none; border-radius:6px; padding:9px 14px; cursor:pointer;}
+  button:active{transform:scale(0.97);}
+  .btn-primary{background:var(--olive); color:#1A1808;}
+  .btn-ghost{background:var(--surface-2); color:var(--text-hi); border:1px solid var(--line);}
+  .btn-danger-ghost{background:transparent; color:var(--brick); border:1px solid var(--brick-dim); padding:6px 10px; font-size:12px;}
+  .btn-small{padding:6px 10px; font-size:12px;}
+
+  .day-pills{display:flex; gap:6px; overflow-x:auto; padding-bottom:4px; margin-bottom:4px;}
+  .day-pill{flex-shrink:0; font-family:'Space Mono',monospace; font-size:11px; letter-spacing:0.5px; padding:7px 12px; border-radius:20px; background:var(--surface-2); border:1px solid var(--line); color:var(--text-lo); cursor:pointer; white-space:nowrap;}
+  .day-pill.today{border-color:var(--amber); color:var(--amber);}
+  .day-pill.active{background:var(--olive); color:#1A1808; border-color:var(--olive);}
+
+  .meal-slot{border:1px solid var(--line); border-radius:8px; padding:12px; margin-bottom:10px; background:var(--surface-2);}
+  .meal-slot.done{opacity:0.55;}
+  .meal-head{display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;}
+  .meal-type{font-family:'Space Mono',monospace; font-size:10px; letter-spacing:1.5px; text-transform:uppercase; color:var(--amber);}
+  .meal-name{font-size:14px; font-weight:600; margin:2px 0;}
+  .meal-name.done{text-decoration:line-through; text-decoration-color:var(--olive);}
+  .meal-notes{font-size:12px; color:var(--text-lo); margin-top:2px;}
+  .meal-actions{display:flex; gap:6px; margin-top:8px;}
+  .checkbox{width:22px; height:22px; border-radius:6px; border:2px solid var(--text-lo); display:flex; align-items:center; justify-content:center; cursor:pointer; flex-shrink:0; font-size:14px; color:transparent;}
+  .checkbox.checked{background:var(--olive); border-color:var(--olive); color:#1A1808;}
+  .add-meal-form{display:flex; flex-direction:column; gap:8px; margin-top:10px;}
+  .add-meal-row{display:flex; gap:8px;}
+
+  .fu-section-title{font-family:'Space Mono',monospace; font-size:11px; letter-spacing:1.5px; text-transform:uppercase; margin:18px 0 8px; display:flex; align-items:center; gap:8px;}
+  .fu-section-title.overdue{color:var(--brick);} .fu-section-title.today{color:var(--amber);} .fu-section-title.upcoming{color:var(--olive);} .fu-section-title.done{color:var(--text-lo);}
+  .fu-count{background:var(--surface-2); border-radius:10px; padding:1px 8px; font-size:10px;}
+  .fu-card{background:var(--surface); border:1px solid var(--line); border-left:4px solid var(--line); border-radius:8px; padding:12px 14px; margin-bottom:10px; display:flex; gap:12px;}
+  .fu-card.overdue{border-left-color:var(--brick);} .fu-card.today{border-left-color:var(--amber);} .fu-card.upcoming{border-left-color:var(--olive);} .fu-card.done{border-left-color:var(--line); opacity:0.55;}
+  .fu-stamp{font-family:'Space Mono',monospace; font-size:10px; letter-spacing:0.5px; color:var(--text-lo); border:1px solid var(--line); border-radius:4px; padding:4px 6px; text-align:center; align-self:flex-start; transform:rotate(-2deg); flex-shrink:0; min-width:52px;}
+  .fu-body{flex:1;}
+  .fu-name{font-weight:700; font-size:15px;} .fu-name.done{text-decoration:line-through;}
+  .fu-reason{font-size:13px; color:var(--text-hi); margin-top:3px;}
+  .fu-notes{font-size:12px; color:var(--text-lo); margin-top:4px; font-style:italic;}
+  .fu-actions{display:flex; gap:6px; margin-top:10px; flex-wrap:wrap;}
+  .empty{text-align:center; padding:28px 10px; color:var(--text-lo); font-size:13px;}
+
+  .fab{position:absolute; bottom:84px; right:20px; width:52px; height:52px; border-radius:50%; background:var(--olive); color:#1A1808; font-size:26px; display:flex; align-items:center; justify-content:center; box-shadow:0 4px 14px rgba(0,0,0,0.4); cursor:pointer; z-index:20;}
+  .modal-overlay{position:absolute; inset:0; background:rgba(0,0,0,0.55); display:none; align-items:flex-end; justify-content:center; z-index:30;}
+  .modal-overlay.show{display:flex;}
+  .modal{background:var(--surface); border-top:1px solid var(--line); border-radius:16px 16px 0 0; padding:20px 18px 24px; width:100%; max-width:440px; max-height:80vh; overflow-y:auto;}
+  .modal-title{font-family:'Space Mono',monospace; font-size:13px; letter-spacing:1.5px; text-transform:uppercase; color:var(--text-lo); margin-bottom:14px;}
+  .field-label{font-size:11px; color:var(--text-lo); margin-bottom:4px; display:block; font-family:'Space Mono',monospace; letter-spacing:0.5px;}
+  .field{margin-bottom:12px;}
+  .modal-actions{display:flex; gap:10px; margin-top:6px;}
+  .modal-actions button{flex:1;}
+
+  nav{position:sticky; bottom:0; display:flex; background:var(--surface); border-top:1px solid var(--line); z-index:10;}
+  .tab{flex:1; text-align:center; padding:12px 0 10px; color:var(--text-lo); cursor:pointer; font-family:'Space Mono',monospace; font-size:11px; letter-spacing:1px; text-transform:uppercase; position:relative;}
+  .tab .tab-icon{font-size:18px; display:block; margin-bottom:3px;}
+  .tab.active{color:var(--olive);}
+  .tab-badge{position:absolute; top:6px; right:calc(50% - 26px); background:var(--brick); color:#fff; font-size:10px; border-radius:9px; padding:0px 5px; font-family:'Inter',sans-serif; font-weight:700;}
+
+  .install-banner{background:var(--surface-2); border:1px solid var(--olive-dim); border-radius:8px; padding:10px 12px; margin-bottom:14px; font-size:12px; display:flex; justify-content:space-between; align-items:center; gap:10px;}
+  .toast{position:fixed; bottom:100px; left:50%; transform:translateX(-50%); background:var(--olive); color:#1A1808; padding:8px 16px; border-radius:20px; font-size:13px; font-weight:600; z-index:99; opacity:0; transition:opacity .3s;}
+  .toast.show{opacity:1;}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <header>
+    <div class="stamp"><span class="dot"></span>FOLLOW UP</div>
+    <div class="sub" id="headerSub">diet log &amp; call reminders</div>
+    <div class="notif-bar">
+      <span class="notif-status off" id="notifStatus">Notifications off</span>
+      <button class="btn-ghost btn-small" id="enableNotifBtn">Enable notifications</button>
+    </div>
+  </header>
+
+  <main>
+    <div class="install-banner" id="installBanner" style="display:none;">
+      <span>Install this as an app on your phone for the best experience.</span>
+      <button class="btn-primary btn-small" id="installBtn">Install</button>
+    </div>
+
+    <section class="view active" id="view-kitchen">
+      <div class="card">
+        <div class="card-title">Weight Log</div>
+        <div class="weight-row">
+          <span class="weight-num" id="currentWeight">--</span>
+          <span class="weight-unit">kg</span>
+          <div class="weight-target">Start 97 → Goal 80<br><span id="weightDelta"></span></div>
+        </div>
+        <div class="bar-track"><div class="bar-fill" id="weightBar" style="width:0%"></div></div>
+        <div class="bar-labels"><span>80</span><span>97</span></div>
+        <div class="log-row">
+          <input type="number" step="0.1" id="weightInput" placeholder="Log today's weight (kg)">
+          <button class="btn-primary" id="logWeightBtn">Log</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title"><span>Meal Plan</span><span id="todayLabel" style="color:var(--amber); font-family:'Space Mono',monospace; font-size:11px;"></span></div>
+        <div class="day-pills" id="dayPills"></div>
+        <div id="mealSlots"></div>
+        <button class="btn-ghost" id="addMealBtn" style="width:100%; margin-top:6px;">+ Add meal for this day</button>
+        <div id="addMealForm" style="display:none;" class="add-meal-form">
+          <select id="newMealType"><option>Breakfast</option><option>Lunch</option><option>Snack</option><option>Dinner</option></select>
+          <input type="text" id="newMealName" placeholder="What to cook (e.g. Rajma + brown rice)">
+          <textarea id="newMealNotes" placeholder="Notes — prep, quantity, protein source... (optional)"></textarea>
+          <div class="add-meal-row">
+            <button class="btn-primary" id="saveMealBtn" style="flex:1;">Save meal</button>
+            <button class="btn-ghost" id="cancelMealBtn" style="flex:1;">Cancel</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="view" id="view-followups">
+      <div id="fuLists"></div>
+    </section>
+  </main>
+
+  <div class="fab" id="fab" style="display:none;">+</div>
+  <div class="toast" id="toast"></div>
+
+  <div class="modal-overlay" id="modalOverlay">
+    <div class="modal">
+      <div class="modal-title" id="modalTitleText">New Follow-up</div>
+      <div class="field"><label class="field-label">WHO</label><input type="text" id="fuName" placeholder="Name or company"></div>
+      <div class="field"><label class="field-label">REGARDING</label><input type="text" id="fuReason" placeholder="e.g. Call about PM role application status"></div>
+      <div class="field"><label class="field-label">REMIND ME ON</label><input type="date" id="fuDate"></div>
+      <div class="field"><label class="field-label">NOTES (OPTIONAL)</label><textarea id="fuNotes" placeholder="Anything to remember before reaching out"></textarea></div>
+      <div class="modal-actions">
+        <button class="btn-ghost" id="fuCancelBtn">Cancel</button>
+        <button class="btn-primary" id="fuSaveBtn">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <nav>
+    <div class="tab active" data-view="kitchen"><span class="tab-icon">🍲</span>Kitchen</div>
+    <div class="tab" data-view="followups"><span class="tab-icon">📞</span>Follow-ups<span class="tab-badge" id="fuBadge" style="display:none;">0</span></div>
+  </nav>
+
+</div>
+
+<script>
+(function(){
+  const DAYS = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  const todayIdx = (new Date().getDay() + 6) % 7;
+  let selectedDay = DAYS[todayIdx];
+
+  const DEFAULT_MEALS = [
+    {id:'m1', day:'Mon', type:'Breakfast', name:'Moong dal chilla + mint chutney', notes:'2 chillas, high protein start', done:false},
+    {id:'m2', day:'Mon', type:'Lunch', name:'Rajma + brown rice + salad', notes:'', done:false},
+    {id:'m3', day:'Mon', type:'Snack', name:'Roasted chana + buttermilk', notes:'', done:false},
+    {id:'m4', day:'Mon', type:'Dinner', name:'Paneer bhurji + 2 rotis', notes:'Light dinner, before 8:30pm', done:false},
+    {id:'m5', day:'Tue', type:'Breakfast', name:'Sprouts salad + boiled peanuts', notes:'', done:false},
+    {id:'m6', day:'Tue', type:'Lunch', name:'Chole + quinoa', notes:'', done:false},
+    {id:'m7', day:'Tue', type:'Dinner', name:'Tofu stir-fry + brown rice', notes:'', done:false},
+    {id:'m8', day:'Wed', type:'Breakfast', name:'Oats + peanut butter + banana', notes:'', done:false},
+    {id:'m9', day:'Wed', type:'Lunch', name:'Soya chunks curry + rice', notes:'', done:false},
+    {id:'m10', day:'Wed', type:'Dinner', name:'Vegetable soup + grilled paneer', notes:'', done:false},
+    {id:'m11', day:'Thu', type:'Breakfast', name:'Besan chilla + curd', notes:'', done:false},
+    {id:'m12', day:'Thu', type:'Lunch', name:'Mixed dal + roti + sabzi', notes:'', done:false},
+    {id:'m13', day:'Thu', type:'Dinner', name:'Paneer tikka + salad', notes:'', done:false},
+    {id:'m14', day:'Fri', type:'Breakfast', name:'Greek-style curd + fruits + nuts', notes:'', done:false},
+    {id:'m15', day:'Fri', type:'Lunch', name:'Lobia curry + rice', notes:'', done:false},
+    {id:'m16', day:'Fri', type:'Dinner', name:'Vegetable khichdi + curd', notes:'', done:false},
+    {id:'m17', day:'Sat', type:'Breakfast', name:'Paneer paratha (1) + curd', notes:'Cheat-light', done:false},
+    {id:'m18', day:'Sat', type:'Lunch', name:'Rajma chawal', notes:'', done:false},
+    {id:'m19', day:'Sat', type:'Dinner', name:'Grilled tofu + sauteed veggies', notes:'', done:false},
+    {id:'m20', day:'Sun', type:'Breakfast', name:'Idli + sambar', notes:'', done:false},
+    {id:'m21', day:'Sun', type:'Lunch', name:'Chole + brown rice', notes:'Meal prep for the week here', done:false},
+    {id:'m22', day:'Sun', type:'Dinner', name:'Light vegetable soup', notes:'', done:false},
+  ];
+
+  let dietData = { weightLog: [], meals: JSON.parse(JSON.stringify(DEFAULT_MEALS)) };
+  let fuData = { items: [] };
+  let editingFuId = null;
+
+  function uid(){ return 'x' + Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+  function todayStr(){ const d = new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+  function fmtDate(iso){ const d = new Date(iso+'T00:00:00'); return d.toLocaleDateString('en-GB',{day:'2-digit',month:'short'}); }
+  function escapeHtml(str){ const div = document.createElement('div'); div.textContent = str; return div.innerHTML; }
+  function showToast(msg){
+    const t = document.getElementById('toast');
+    t.textContent = msg; t.classList.add('show');
+    setTimeout(()=> t.classList.remove('show'), 2200);
+  }
+
+  // ---------- local + server persistence ----------
+  function loadLocal(){
+    try {
+      const d = localStorage.getItem('followup-diet');
+      const f = localStorage.getItem('followup-followups');
+      if (d) dietData = JSON.parse(d);
+      if (f) fuData = JSON.parse(f);
+    } catch(e){ console.error(e); }
+  }
+  function saveLocal(){
+    localStorage.setItem('followup-diet', JSON.stringify(dietData));
+    localStorage.setItem('followup-followups', JSON.stringify(fuData));
+  }
+  async function syncToServer(){
+    try {
+      await fetch('/api/state', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ meals: dietData.meals, weightLog: dietData.weightLog, items: fuData.items })
+      });
+    } catch(e){ /* offline is fine, local copy still works */ }
+  }
+  async function pullFromServerIfNewer(){
+    try {
+      const res = await fetch('/api/state');
+      const state = await res.json();
+      if (state && (state.meals?.length || state.items?.length) && !localStorage.getItem('followup-diet')) {
+        dietData.meals = state.meals || dietData.meals;
+        dietData.weightLog = state.weightLog || [];
+        fuData.items = state.items || [];
+        saveLocal();
+      }
+    } catch(e){ /* server not reachable yet, fine */ }
+  }
+  async function persist(){ saveLocal(); await syncToServer(); }
+
+  // ---------- .ics calendar export ----------
+  function downloadIcs(item){
+    const dt = item.dueDate.replace(/-/g,'');
+    const uidStr = item.id + '@followup.local';
+    const ics = [
+      'BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//FollowUp//EN','BEGIN:VEVENT',
+      'UID:'+uidStr, 'DTSTAMP:'+dt+'T090000Z', 'DTSTART:'+dt+'T090000Z', 'DTEND:'+dt+'T093000Z',
+      'SUMMARY:'+icsEscape('Follow up: '+item.name),
+      'DESCRIPTION:'+icsEscape(item.reason + (item.notes ? ' — '+item.notes : '')),
+      'BEGIN:VALARM','ACTION:DISPLAY','TRIGGER:-PT0M','DESCRIPTION:Reminder','END:VALARM',
+      'END:VEVENT','END:VCALENDAR'
+    ].join('\r\n');
+    const blob = new Blob([ics], {type:'text/calendar'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'followup-'+item.name.replace(/[^a-z0-9]/gi,'-').toLowerCase()+'.ics';
+    document.body.appendChild(a); a.click(); a.remove();
+  }
+  function icsEscape(s){ return String(s).replace(/([,;])/g,'\\$1'); }
+
+  // ---------- tabs ----------
+  document.querySelectorAll('.tab').forEach(tab=>{
+    tab.addEventListener('click', ()=>{
+      document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+      document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+      tab.classList.add('active');
+      document.getElementById('view-'+tab.dataset.view).classList.add('active');
+      document.getElementById('fab').style.display = tab.dataset.view === 'followups' ? 'flex' : 'none';
+      document.getElementById('headerSub').textContent = tab.dataset.view === 'kitchen' ? 'diet log & cooking reminders' : 'calls & messages to follow up on';
+    });
+  });
+
+  // ---------- weight ----------
+  function renderWeight(){
+    const log = dietData.weightLog.slice().sort((a,b)=> a.date < b.date ? -1 : 1);
+    const latest = log.length ? log[log.length-1].weight : null;
+    document.getElementById('currentWeight').textContent = latest !== null ? latest : '--';
+    const start = 97, goal = 80;
+    let pct = 0;
+    if (latest !== null) pct = Math.max(0, Math.min(100, ((start - latest) / (start - goal)) * 100));
+    document.getElementById('weightBar').style.width = pct + '%';
+    const deltaEl = document.getElementById('weightDelta');
+    if (latest !== null) {
+      const toGoal = (latest - goal).toFixed(1);
+      deltaEl.textContent = toGoal > 0 ? toGoal + ' kg to go' : 'Goal reached 🎉';
+    } else deltaEl.textContent = 'No entries yet';
+  }
+  document.getElementById('logWeightBtn').addEventListener('click', async ()=>{
+    const val = parseFloat(document.getElementById('weightInput').value);
+    if (!val || val <= 0) return;
+    const today = todayStr();
+    const existing = dietData.weightLog.find(e=>e.date===today);
+    if (existing) existing.weight = val; else dietData.weightLog.push({date: today, weight: val});
+    document.getElementById('weightInput').value = '';
+    renderWeight();
+    await persist();
+  });
+
+  // ---------- meals ----------
+  function renderDayPills(){
+    const wrap = document.getElementById('dayPills');
+    wrap.innerHTML = '';
+    DAYS.forEach((d,i)=>{
+      const pill = document.createElement('div');
+      pill.className = 'day-pill' + (d===selectedDay ? ' active' : '') + (i===todayIdx ? ' today' : '');
+      pill.textContent = d;
+      pill.addEventListener('click', ()=>{ selectedDay = d; renderKitchen(); });
+      wrap.appendChild(pill);
+    });
+    document.getElementById('todayLabel').textContent = selectedDay === DAYS[todayIdx] ? '● today' : '';
+  }
+  function renderMealSlots(){
+    const wrap = document.getElementById('mealSlots');
+    wrap.innerHTML = '';
+    const order = {Breakfast:0, Lunch:1, Snack:2, Dinner:3};
+    const meals = dietData.meals.filter(m=>m.day===selectedDay).sort((a,b)=> (order[a.type]??9)-(order[b.type]??9));
+    if (!meals.length){ wrap.innerHTML = '<div class="empty">No meals planned for '+selectedDay+' yet. Add one below.</div>'; return; }
+    meals.forEach(m=>{
+      const slot = document.createElement('div');
+      slot.className = 'meal-slot' + (m.done ? ' done' : '');
+      slot.innerHTML = `
+        <div class="meal-head"><span class="meal-type">${m.type}</span><div class="checkbox ${m.done?'checked':''}" data-id="${m.id}">${m.done?'✓':''}</div></div>
+        <div class="meal-name ${m.done?'done':''}">${escapeHtml(m.name)}</div>
+        ${m.notes ? `<div class="meal-notes">${escapeHtml(m.notes)}</div>` : ''}
+        <div class="meal-actions"><button class="btn-danger-ghost" data-del="${m.id}">Remove</button></div>`;
+      wrap.appendChild(slot);
+    });
+    wrap.querySelectorAll('.checkbox').forEach(cb=>{
+      cb.addEventListener('click', async ()=>{
+        const m = dietData.meals.find(x=>x.id===cb.dataset.id);
+        if (m) m.done = !m.done;
+        renderMealSlots(); await persist();
+      });
+    });
+    wrap.querySelectorAll('[data-del]').forEach(btn=>{
+      btn.addEventListener('click', async ()=>{
+        dietData.meals = dietData.meals.filter(x=>x.id!==btn.dataset.del);
+        renderMealSlots(); await persist();
+      });
+    });
+  }
+  document.getElementById('addMealBtn').addEventListener('click', ()=>{
+    document.getElementById('addMealForm').style.display = 'flex';
+    document.getElementById('addMealBtn').style.display = 'none';
+  });
+  document.getElementById('cancelMealBtn').addEventListener('click', ()=>{
+    document.getElementById('addMealForm').style.display = 'none';
+    document.getElementById('addMealBtn').style.display = 'block';
+    document.getElementById('newMealName').value = ''; document.getElementById('newMealNotes').value = '';
+  });
+  document.getElementById('saveMealBtn').addEventListener('click', async ()=>{
+    const name = document.getElementById('newMealName').value.trim();
+    if (!name) return;
+    dietData.meals.push({ id: uid(), day: selectedDay, type: document.getElementById('newMealType').value, name, notes: document.getElementById('newMealNotes').value.trim(), done: false });
+    document.getElementById('newMealName').value = ''; document.getElementById('newMealNotes').value = '';
+    document.getElementById('addMealForm').style.display = 'none';
+    document.getElementById('addMealBtn').style.display = 'block';
+    renderMealSlots(); await persist();
+  });
+  function renderKitchen(){ renderWeight(); renderDayPills(); renderMealSlots(); }
+
+  // ---------- follow-ups ----------
+  function classify(item){
+    const t = todayStr();
+    if (item.done) return 'done';
+    if (item.dueDate < t) return 'overdue';
+    if (item.dueDate === t) return 'today';
+    return 'upcoming';
+  }
+  function renderFollowups(){
+    const wrap = document.getElementById('fuLists');
+    wrap.innerHTML = '';
+    const groups = {overdue:[], today:[], upcoming:[], done:[]};
+    fuData.items.forEach(item=> groups[classify(item)].push(item));
+    groups.overdue.sort((a,b)=> a.dueDate < b.dueDate ? -1 : 1);
+    groups.today.sort((a,b)=> a.name.localeCompare(b.name));
+    groups.upcoming.sort((a,b)=> a.dueDate < b.dueDate ? -1 : 1);
+    groups.done.sort((a,b)=> b.dueDate < a.dueDate ? -1 : 1);
+
+    const activeCount = groups.overdue.length + groups.today.length;
+    const badge = document.getElementById('fuBadge');
+    if (activeCount > 0){ badge.style.display='inline-block'; badge.textContent = activeCount; } else badge.style.display = 'none';
+
+    const sections = [ {key:'overdue', label:'Overdue', cls:'overdue'}, {key:'today', label:'Due today', cls:'today'}, {key:'upcoming', label:'Upcoming', cls:'upcoming'}, {key:'done', label:'Done', cls:'done'} ];
+    let any = false;
+    sections.forEach(sec=>{
+      const list = groups[sec.key];
+      if (!list.length) return;
+      any = true;
+      const title = document.createElement('div');
+      title.className = 'fu-section-title ' + sec.cls;
+      title.innerHTML = `${sec.label} <span class="fu-count">${list.length}</span>`;
+      wrap.appendChild(title);
+      list.forEach(item=>{
+        const card = document.createElement('div');
+        card.className = 'fu-card ' + sec.cls;
+        card.innerHTML = `
+          <div class="fu-stamp">${fmtDate(item.dueDate)}</div>
+          <div class="fu-body">
+            <div class="fu-name ${item.done?'done':''}">${escapeHtml(item.name)}</div>
+            <div class="fu-reason">${escapeHtml(item.reason)}</div>
+            ${item.notes ? `<div class="fu-notes">${escapeHtml(item.notes)}</div>` : ''}
+            <div class="fu-actions">
+              <button class="btn-ghost btn-small" data-toggle="${item.id}">${item.done ? 'Mark undone' : 'Mark done'}</button>
+              <button class="btn-ghost btn-small" data-edit="${item.id}">Edit</button>
+              <button class="btn-ghost btn-small" data-cal="${item.id}">Add to calendar</button>
+              <button class="btn-danger-ghost" data-del="${item.id}">Delete</button>
+            </div>
+          </div>`;
+        wrap.appendChild(card);
+      });
+    });
+    if (!any) wrap.innerHTML = '<div class="empty">No follow-ups yet.<br>Tap + to add someone you need to call or message.</div>';
+
+    wrap.querySelectorAll('[data-toggle]').forEach(btn=> btn.addEventListener('click', async ()=>{
+      const item = fuData.items.find(x=>x.id===btn.dataset.toggle);
+      if (item) item.done = !item.done;
+      renderFollowups(); await persist();
+    }));
+    wrap.querySelectorAll('[data-del]').forEach(btn=> btn.addEventListener('click', async ()=>{
+      fuData.items = fuData.items.filter(x=>x.id!==btn.dataset.del);
+      renderFollowups(); await persist();
+    }));
+    wrap.querySelectorAll('[data-edit]').forEach(btn=> btn.addEventListener('click', ()=> openFuModal(btn.dataset.edit)));
+    wrap.querySelectorAll('[data-cal]').forEach(btn=> btn.addEventListener('click', ()=>{
+      const item = fuData.items.find(x=>x.id===btn.dataset.cal);
+      if (item) downloadIcs(item);
+    }));
+  }
+
+  function openFuModal(id){
+    editingFuId = id || null;
+    document.getElementById('modalTitleText').textContent = id ? 'Edit Follow-up' : 'New Follow-up';
+    if (id){
+      const item = fuData.items.find(x=>x.id===id);
+      document.getElementById('fuName').value = item.name;
+      document.getElementById('fuReason').value = item.reason;
+      document.getElementById('fuDate').value = item.dueDate;
+      document.getElementById('fuNotes').value = item.notes || '';
+    } else {
+      document.getElementById('fuName').value = ''; document.getElementById('fuReason').value = '';
+      document.getElementById('fuDate').value = todayStr(); document.getElementById('fuNotes').value = '';
+    }
+    document.getElementById('modalOverlay').classList.add('show');
+  }
+  function closeFuModal(){ document.getElementById('modalOverlay').classList.remove('show'); editingFuId = null; }
+  document.getElementById('fab').addEventListener('click', ()=> openFuModal(null));
+  document.getElementById('fuCancelBtn').addEventListener('click', closeFuModal);
+  document.getElementById('modalOverlay').addEventListener('click', (e)=>{ if (e.target.id === 'modalOverlay') closeFuModal(); });
+  document.getElementById('fuSaveBtn').addEventListener('click', async ()=>{
+    const name = document.getElementById('fuName').value.trim();
+    const reason = document.getElementById('fuReason').value.trim();
+    const dueDate = document.getElementById('fuDate').value;
+    const notes = document.getElementById('fuNotes').value.trim();
+    if (!name || !reason || !dueDate) return;
+    if (editingFuId){
+      const item = fuData.items.find(x=>x.id===editingFuId);
+      Object.assign(item, {name, reason, dueDate, notes});
+    } else {
+      fuData.items.push({id: uid(), name, reason, dueDate, notes, done:false, createdAt: todayStr()});
+    }
+    closeFuModal(); renderFollowups(); await persist();
+  });
+
+  // ---------- PWA install prompt ----------
+  let deferredInstallEvent = null;
+  window.addEventListener('beforeinstallprompt', (e)=>{
+    e.preventDefault();
+    deferredInstallEvent = e;
+    document.getElementById('installBanner').style.display = 'flex';
+  });
+  document.getElementById('installBtn').addEventListener('click', async ()=>{
+    if (deferredInstallEvent){ deferredInstallEvent.prompt(); await deferredInstallEvent.userChoice; document.getElementById('installBanner').style.display = 'none'; }
+  });
+
+  // ---------- push notifications ----------
+  function urlBase64ToUint8Array(base64String) {
+    const padding = '='.repeat((4 - base64String.length % 4) % 4);
+    const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+    const rawData = window.atob(base64);
+    const outputArray = new Uint8Array(rawData.length);
+    for (let i = 0; i < rawData.length; ++i) outputArray[i] = rawData.charCodeAt(i);
+    return outputArray;
+  }
+  function updateNotifStatus(){
+    const el = document.getElementById('notifStatus');
+    const btn = document.getElementById('enableNotifBtn');
+    if (!('Notification' in window)) { el.textContent = 'Not supported'; btn.style.display='none'; return; }
+    if (Notification.permission === 'granted') { el.textContent = 'Notifications on'; el.className='notif-status on'; btn.style.display='none'; }
+    else { el.textContent = 'Notifications off'; el.className='notif-status off'; btn.style.display='inline-block'; }
+  }
+  async function enablePush(){
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) { showToast('Push not supported on this browser'); return; }
+    const permission = await Notification.requestPermission();
+    if (permission !== 'granted') { showToast('Notifications permission denied'); updateNotifStatus(); return; }
+    try {
+      const reg = await navigator.serviceWorker.ready;
+      const keyRes = await fetch('/api/vapid-public-key');
+      const { publicKey } = await keyRes.json();
+      if (!publicKey) { showToast('Server has no VAPID keys set — check .env'); updateNotifStatus(); return; }
+      let sub = await reg.pushManager.getSubscription();
+      if (!sub) {
+        sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlBase64ToUint8Array(publicKey) });
+      }
+      await fetch('/api/subscribe', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(sub) });
+      showToast('Notifications enabled ✅');
+    } catch(e){ console.error(e); showToast('Could not enable push — see console'); }
+    updateNotifStatus();
+  }
+  document.getElementById('enableNotifBtn').addEventListener('click', enablePush);
+
+  // ---------- boot ----------
+  async function boot(){
+    if ('serviceWorker' in navigator) {
+      try { await navigator.serviceWorker.register('/sw.js'); } catch(e){ console.error('SW registration failed', e); }
+    }
+    loadLocal();
+    await pullFromServerIfNewer();
+    renderKitchen();
+    renderFollowups();
+    updateNotifStatus();
+    await syncToServer(); // keep server copy warm for the cron reminders
+  }
+  boot();
+})();
+</script>
+</body>
+</html>
